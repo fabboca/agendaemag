@@ -1,0 +1,1373 @@
+{shared.i}.
+
+/* 
+ 
+   Function RetornaHora returns char
+            (input Tempo as int).
+      def var Horas     as int no-undo.
+      def var Minutos   as int no-undo.
+      def var Minutos2  as int no-undo.
+      def var HoraFinal as cha no-undo form 'XX:XX'.
+      assign 
+         Horas     = truncate((Tempo / 3600),0)
+         Minutos   = Tempo modulo 3600
+         Minutos2  = Minutos / 60
+         HoraFinal = string(Horas, "-999") + ":" + string(Minutos2,"99").
+      return HoraFinal.   
+   end function.
+
+   */
+
+
+{funcoes.i
+   &RetornaHora = *}.
+
+def buffer bf_ssi013 for ssi013.
+   
+def var vi_Profissional as int init 2. 
+def var vi_X as int.
+def var vi_Disponivel as int.
+def var vi_HoraInicioDisponivel as int.
+def var vi_IdSessao as int init 1.
+def var vi_DiaSemana as int.
+def var vt_Data as date init today.
+def var vi_HoraInicialTurno as int.
+def var vi_HoraFinalTurno as int.
+def var vl_HorarioDisponivelEmAberto as log.
+def var vi_HorarioReservadoAte as int.
+def var vi_IdAgenda as int.
+def var vi_PrimeiraHoraClinica as int.
+def var vi_UltimaHoraClinica   as int.
+
+def temp-table tt_HorarioDisponivel
+    field HoraInicio as int
+	field IdProfissional as int
+	field HoraFim as int
+	field Encaixa as log
+	field QtdeRecursosDisponiveis as int.
+
+def temp-table tt_Profissional
+    field IdProfissional as int
+    field NomeProfissional as char form 'X(20)'.
+    
+create tt_Profissional.
+assign 
+  tt_Profissional.IdProfissional = 1
+  tt_Profissional.NomeProfissional = 'THAIS SILVEIRA'
+  .
+create tt_Profissional.
+assign 
+  tt_Profissional.IdProfissional = 2
+  tt_Profissional.NomeProfissional = 'KEURI DALMORO'
+  .
+create tt_Profissional.
+assign 
+  tt_Profissional.IdProfissional = 3
+  tt_Profissional.NomeProfissional = 'ANDREI DOS SANTOS'
+  .
+
+create tt_Profissional.
+assign 
+  tt_Profissional.IdProfissional = 4
+  tt_Profissional.NomeProfissional = 'TAIS ZUBARAN'
+  .
+  
+/*---------------------------------------------------------------------------------*/
+  
+def temp-table tt_Sessao
+    field IdSessao as int
+    field NomeSessao as char form 'X(20)' 
+	field ExigeExclusividadeProfissional as log
+    field Vagas as int.
+    
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 1
+   tt_Sessao.NomeSessao = 'CARBOXITERAPIA'
+   tt_sessao.Vagas       = 1
+   tt_sessao.ExigeExclusividadeProfissional = yes
+   .
+   
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 2
+   tt_Sessao.NomeSessao = 'SESSAO_MANTHUS'  
+   tt_sessao.Vagas       = 1
+   tt_sessao.ExigeExclusividadeProfissional = yes
+   .
+
+
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 3
+   tt_Sessao.NomeSessao = 'ENDERMOTERAPIA'
+   tt_sessao.Vagas       = 2
+   tt_sessao.ExigeExclusividadeProfissional = yes
+   .
+   
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 4
+   tt_Sessao.NomeSessao = 'SESSAO_CORRENTE RUSSA'  
+   tt_sessao.Vagas       = 1
+   tt_sessao.ExigeExclusividadeProfissional = yes
+   .
+   
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 5
+   tt_Sessao.NomeSessao = 'SESSAO_INFRARED' 
+   tt_sessao.Vagas       = 3
+   tt_sessao.ExigeExclusividadeProfissional = no
+   .
+create tt_Sessao.
+assign 
+   tt_Sessao.IdSessao = 6
+   tt_Sessao.NomeSessao = 'HIDROLIPOCLASIA ULTRASSONICA'
+   tt_sessao.Vagas       = 1
+   tt_sessao.ExigeExclusividadeProfissional = yes
+   .  
+   
+/*---------------------------------------------------------------------------------*/
+   
+def temp-table tt_Procedimento
+   field idProcedimento as int
+   field Descricao as char form 'x(20)'.
+
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 1
+   tt_Procedimento.Descricao      = 'APLICAR_CARBOX'
+   .
+
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 2
+   tt_Procedimento.Descricao      = 'APLICAR_MANTHUS'
+   .
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 3
+   tt_Procedimento.Descricao      = 'APLICAR_ENDERMO'
+   .
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 4
+   tt_Procedimento.Descricao      = 'APLICAR_CORRENTE RUSSA'
+   .
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 5
+   tt_Procedimento.Descricao      = 'ACOMPANHAR_INFRA-RED'
+   .
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 6
+   tt_Procedimento.Descricao      = 'FAZER PESAGEM E MEDIDAS'
+   .  
+   
+create tt_Procedimento.
+assign 
+   tt_Procedimento.IdProcedimento = 7
+   tt_Procedimento.Descricao      = 'APLICAR SORO'
+   .
+  
+/*---------------------------------------------------------------------------------*/
+  
+def temp-table tt_Procedimento_Sessao
+    field IdSessao as int
+    field IdProcedimento as int
+	field Duracao as int
+	.
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 1
+   tt_Procedimento_Sessao.IdProcedimento = 1
+   tt_Procedimento_Sessao.Duracao = 40.
+
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 2
+   tt_Procedimento_Sessao.IdProcedimento = 2
+   tt_Procedimento_Sessao.Duracao = 40.
+	
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 3
+   tt_Procedimento_Sessao.IdProcedimento = 3
+   tt_Procedimento_Sessao.Duracao = 20.
+
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 4
+   tt_Procedimento_Sessao.IdProcedimento = 4
+   tt_Procedimento_Sessao.Duracao = 40.   
+	
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 5
+   tt_Procedimento_Sessao.IdProcedimento = 5
+   tt_Procedimento_Sessao.Duracao = 40.	
+   
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 5
+   tt_Procedimento_Sessao.IdProcedimento = 6
+   tt_Procedimento_Sessao.Duracao = 10.	   
+ 
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 6
+   tt_Procedimento_Sessao.IdProcedimento = 7
+   tt_Procedimento_Sessao.Duracao = 20.	   
+   
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 6
+   tt_Procedimento_Sessao.IdProcedimento = 1
+   tt_Procedimento_Sessao.Duracao = 10.  
+   
+create tt_Procedimento_Sessao.
+assign
+   tt_Procedimento_Sessao.IdSessao = 6
+   tt_Procedimento_Sessao.IdProcedimento = 2
+   tt_Procedimento_Sessao.Duracao = 30.   
+
+   
+/*---------------------------------------------------------------------------------*/   
+
+def temp-table tt_TipoRecurso 
+    field idTipoRecurso as int
+    field descricaoTipoRecurso as char form 'x(30)'.	
+
+create tt_TipoRecurso.
+assign 
+   tt_TipoRecurso.idTipoRecurso        = 1
+   tt_TipoRecurso.descricaoTipoRecurso = 'Aparelho Manthus'.
+	
+create tt_TipoRecurso.
+assign 
+   tt_TipoRecurso.idTipoRecurso        = 2
+   tt_TipoRecurso.descricaoTipoRecurso = 'Aparelho Carbox'.	
+   
+create tt_TipoRecurso.
+assign 
+   tt_TipoRecurso.idTipoRecurso        = 3
+   tt_TipoRecurso.descricaoTipoRecurso = 'Aparelho Endermo'.	 
+
+create tt_TipoRecurso.
+assign 
+   tt_TipoRecurso.idTipoRecurso        = 4
+   tt_TipoRecurso.descricaoTipoRecurso = 'Aparelho Infrared'.   
+   
+/*---------------------------------------------------------------------------------*/   
+   
+def temp-table tt_Recurso  /* Equipamentos, instalações, móveis, etc */
+    field idRecurso as int
+    field idTipoRecurso as int
+	field descricaoRecurso as char form 'x(30)'	
+	field Marca as char form 'X(20)'
+	field AnoAquisicao as int.
+
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 1
+   tt_Recurso.idTipoRecurso = 1
+   tt_Recurso.DescricaoRecurso = 'Aparelho Manthus KLD'
+   tt_Recurso.Marca = 'KLD'
+   tt_recurso.AnoAquisicao = 2012.
+
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 2
+   tt_Recurso.idTipoRecurso = 2
+   tt_Recurso.DescricaoRecurso = 'Aparelho Carboxiterapia Ares'
+   tt_Recurso.Marca = 'ARES'
+   tt_recurso.AnoAquisicao = 2012.
+
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 3
+   tt_Recurso.idTipoRecurso = 4
+   tt_Recurso.DescricaoRecurso = 'Manta Infrared 1'
+   tt_Recurso.Marca = 'Xing Ling'
+   tt_recurso.AnoAquisicao = 2012.
+
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 4
+   tt_Recurso.idTipoRecurso = 4
+   tt_Recurso.DescricaoRecurso = 'Manta Infrared 2'
+   tt_Recurso.Marca = 'Xing Ling'
+   tt_recurso.AnoAquisicao = 2012.
+   
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 5  
+   tt_Recurso.idTipoRecurso = 4
+   tt_Recurso.DescricaoRecurso = 'Manta Infrared 3'
+   tt_Recurso.Marca = 'Xing Ling'
+   tt_recurso.AnoAquisicao = 2012.   
+   
+/*
+create tt_Recurso.
+assign
+   tt_Recurso.IdRecurso = 6
+   tt_Recurso.idTipoRecurso = 2
+   tt_Recurso.DescricaoRecurso = 'Aparelho Carboxiterapia HTM Compact'
+   tt_Recurso.Marca = 'HTM'
+   tt_recurso.AnoAquisicao = 2012.   
+  */ 
+/*---------------------------------------------------------------------------------*/
+
+def temp-table tt_RecursoPorSessao
+    field IdSessao as int
+	field IdTipoRecurso as int.
+	
+create tt_RecursoPorSessao.
+assign 
+   	tt_RecursoPorSessao.IdSessao = 1
+	tt_RecursoPorSessao.IdTipoRecurso = 2.
+	
+create tt_RecursoPorSessao.
+assign 
+   	tt_RecursoPorSessao.IdSessao = 2
+	tt_RecursoPorSessao.IdTipoRecurso = 1.
+	
+create tt_RecursoPorSessao.
+assign 
+   	tt_RecursoPorSessao.IdSessao = 3
+	tt_RecursoPorSessao.IdTipoRecurso = 3.
+
+create tt_RecursoPorSessao.
+assign 
+   	tt_RecursoPorSessao.IdSessao = 5
+	tt_RecursoPorSessao.IdTipoRecurso = 4.	
+	
+/*---------------------------------------------------------------------------------*/
+   	
+def temp-table tt_ProfSessao
+    field IdSessao as int
+    field IdProfissional as int.
+    
+create tt_ProfSessao.   /* Carbox a Keuri Faz */
+assign 
+   tt_ProfSessao.IdSessao = 1
+   tt_ProfSessao.IdProfissional = 2
+   .
+   
+create tt_ProfSessao.   /* Carbox o Andrei faz */
+assign 
+   tt_ProfSessao.IdSessao = 1
+   tt_ProfSessao.IdProfissional = 3
+   .
+
+create tt_ProfSessao.   /* Manthus a Thais Faz */
+assign 
+   tt_ProfSessao.IdSessao = 2
+   tt_ProfSessao.IdProfissional = 1
+   .
+create tt_ProfSessao.   /* Manthus a Keuri Faz */
+assign 
+   tt_ProfSessao.IdSessao = 2
+   tt_ProfSessao.IdProfissional = 2
+   .
+
+create tt_ProfSessao.   /* Hidrolipoclasia Thais Zubaram Faz */
+assign 
+   tt_ProfSessao.IdSessao = 6
+   tt_ProfSessao.IdProfissional = 4
+   .
+
+create tt_ProfSessao.   /* Infrared a Keuri Faz */
+assign 
+   tt_ProfSessao.IdSessao = 5
+   tt_ProfSessao.IdProfissional = 2
+   .     
+ 
+/*---------------------------------------------------------------------------------*/   
+   
+def temp-table tt_escala
+    field idEscala as int
+    field Descricao as char
+    field Entrada_1 as int
+    field Saida_1 as int
+    field Entrada_2 as int
+    field Saida_2 as int
+    field Entrada_3 as int
+    field Saida_3 as int.
+    
+create tt_Escala.
+assign 
+   tt_Escala.IdEscala      = 1
+   tt_Escala.Descricao     = 'Dia-Todo'
+   tt_Escala.Entrada_1 	   = 540
+   tt_Escala.Saida_1       = 720
+   tt_Escala.Entrada_2     = 810
+   tt_Escala.Saida_2       = 1230.
+       
+create tt_Escala.
+assign 
+   tt_Escala.IdEscala      = 2
+   tt_Escala.Descricao     = 'A Tarde e a Noite'
+   tt_Escala.Entrada_1 = 810
+   tt_Escala.Saida_1   = 1230
+   tt_Escala.Entrada_2 = 0
+   tt_Escala.Saida_2   = 0.
+   
+    
+create tt_Escala.
+assign 
+   tt_Escala.IdEscala      = 3
+   tt_Escala.Descricao     = 'Somente de Manha'
+   tt_Escala.Entrada_1 = 540
+   tt_Escala.Saida_1   = 720
+   tt_Escala.Entrada_2 = 0
+   tt_Escala.Saida_2   = 0
+   tt_Escala.Entrada_3 = 0
+   tt_Escala.Saida_3   = 0.
+   
+/*---------------------------------------------------------------------------------*/   
+   
+def temp-table tt_DiaDaSemana
+    field idDiaDaSemana as int
+    field Descricao   as char form 'X(10)'
+    .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 1
+   tt_DiaDaSemana.Descricao     = 'Domingo'.
+   
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 2
+   tt_DiaDaSemana.Descricao     = 'Segunda'
+   .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 3
+   tt_DiaDaSemana.Descricao     = 'Terca'
+   .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 4
+   tt_DiaDaSemana.Descricao     = 'Quarta'
+   .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 5
+   tt_DiaDaSemana.Descricao     = 'Quinta'
+   .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 6
+   tt_DiaDaSemana.Descricao     = 'Sexta'
+   .
+create tt_DiaDaSemana.
+assign 
+   tt_DiaDaSemana.idDiaDaSemana = 7
+   tt_DiaDaSemana.Descricao     = 'Sabado'
+   .
+
+/*---------------------------------------------------------------------------------*/
+   
+def temp-table tt_Escala_Prof
+    field IdProfissional  as int
+    field idEscala        as int
+    field idDiaDaSemana   as int
+    .
+    
+/* Escala Thais Estagiaria */
+
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 2       
+       tt_Escala_Prof.idEscala         = 3
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 3       
+       tt_Escala_Prof.idEscala         = 3
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 4      
+       tt_Escala_Prof.idEscala         = 3
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 5       
+       tt_Escala_Prof.idEscala         = 3
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 6       
+       tt_Escala_Prof.idEscala         = 3
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 1
+       tt_Escala_Prof.idDiaDaSemana    = 7       
+       tt_Escala_Prof.idEscala         = 3
+       .
+       
+/* Escala Keuri */
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 2
+       tt_Escala_Prof.idDiaDaSemana    = 2       
+       tt_Escala_Prof.idEscala         = 2
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 2
+       tt_Escala_Prof.idDiaDaSemana    = 3       
+       tt_Escala_Prof.idEscala         = 2
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 2
+       tt_Escala_Prof.idDiaDaSemana    = 5       
+       tt_Escala_Prof.idEscala         = 3
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 2
+       tt_Escala_Prof.idDiaDaSemana    = 6       
+       tt_Escala_Prof.idEscala         = 2
+       .
+
+/* Escala Andrei */
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 3
+       tt_Escala_Prof.idDiaDaSemana    = 2       
+       tt_Escala_Prof.idEscala         = 1
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 3
+       tt_Escala_Prof.idDiaDaSemana    = 3       
+       tt_Escala_Prof.idEscala         = 1
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 3
+       tt_Escala_Prof.idDiaDaSemana    = 4       
+       tt_Escala_Prof.idEscala         = 1
+       .
+       
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 3
+       tt_Escala_Prof.idDiaDaSemana    = 5       
+       tt_Escala_Prof.idEscala         = 3
+       .
+
+/* Escala Tais Zubaran */
+	   
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 4
+       tt_Escala_Prof.idDiaDaSemana    = 4       
+       tt_Escala_Prof.idEscala         = 1
+       .
+create tt_Escala_Prof.
+    assign 
+       tt_Escala_Prof.IdProfissional   = 4
+       tt_Escala_Prof.idDiaDaSemana    = 6      
+       tt_Escala_Prof.idEscala         = 1
+       .	   
+	   
+	   
+/*---------------------------------------------------------------------------------*/	   
+	   
+update vi_IdSessao.
+  find first tt_Sessao
+     where tT_Sessao.IdSessao = vi_IdSessao
+     no-error.
+  /*
+  disp tt_sessao.NomeS.
+  */
+ 
+update vt_data.
+
+if vt_Data = ? then 
+    vi_DiaSemana = 0.
+else
+   assign vi_DiaSemana = weekday(vt_Data).
+
+update 
+   vi_DiaSemana.
+  find first tt_DiadaSemana
+      where tT_diadaSemana.IdDiadaSemana = vi_DiaSemana
+      no-error.
+  if avail tt_DiaDaSemana then 
+     disp 
+        tt_DiadaSemana.Descricao.
+
+update 
+   vi_Profissional.
+
+find first tt_Profissional 
+   where tt_Profissional.IdProfissional = vi_Profissional
+   no-error.
+if avail tt_Profissional then 
+   disp tt_Profissional.Nome.   
+   
+def var vi_TempoTotalSessao as int.   
+for first tt_Sessao
+   where tt_Sessao.IdSessao = vi_IdSessao,
+    each tt_Procedimento_Sessao
+   where tt_Procedimento_Sessao.IdSessao = tt_Sessao.IdSessao.
+   
+   assign 
+      vi_TempoTotalSessao = vi_TempoTotalSessao 
+						  + tt_Procedimento_Sessao.Duracao.
+						  
+end.						  
+
+message 'Tempo total Sessao Requerida ' vi_TempoTotalSessao view-as alert-box.
+
+/*
+for each ssi013,
+   first tt_Sessao
+   where tT_Sessao.IdSessao = ssi013.IdSessao,
+   first tt_Profissional
+   where tt_Profissional.IdProfissional = ssi013.IdProfissional:
+   
+   disp 
+      ssi013.Data
+	  tt_Profissional.Nome
+	  tt_Sessao.NomeSessao
+	  retornaHora(ssi013.horaInicio * 60)
+	  retornaHora(ssi013.horaFim * 60).
+end.	  
+*/	
+	
+/* Pesquisa Sessao, equipamentos disponiveis, profissionais Habilitados de acordo com escala de trabalho */
+
+/* Algoritmo necessário */
+   
+   /*
+   
+   1) Com base na sessão pedida (obrigatorio), data(obrigatório), profissional(opcional) buscar:
+		a) Quais profissionais estão habilitados pra fazer a sessão?
+		b) Dos profissionais habilitados, quais estão na clinica no dia solicitado?
+		c) Dos profissionais habilitados que estão no dia solicitado, quais horarios estão disponiveis por profissional?
+		d) Se tenho profissionais disponiveis pra executar a sessão, quantos recursos são necessários pra executar a sessão?
+		e) Dos Recursos Necessários pra executar a Sessão, quantos eu tenho disponivel?
+		f) Se tem Profissional disponivel e recurso disponivel, o horário está disponível.		
+	*/	
+
+def temp-table tt_ProfissionaisHabilitados
+    field idProfissional as int.	
+	
+empty temp-table tt_ProfissionaisHabilitados.
+	
+/* Verifica os profissinais habilitados para atender a sessao */
+for each tt_ProfSessao
+   where tt_ProfSessao.IdSessao = vi_IdSessao:
+	 
+   if not 
+      can-find(first tt_ProfissionaisHabilitados
+			   where tt_ProfissionaisHabilitados.IdProfissional = tt_ProfSessao.IdProfissional) then do.
+			   
+			   
+	  create tt_ProfissionaisHabilitados.
+	  assign 
+	     tt_ProfissionaisHabilitados.IdProfissional = tt_ProfSessao.IdProfissional.
+   end.
+end.   
+	
+/* mostra os profissionais habilitados */
+for each tt_ProfissionaisHabilitados,
+   first tt_Profissional
+   where tt_Profissional.IdProf = tt_ProfissionaisHabilitados.IdProfissional.
+    disp tt_ProfissionaisHabilitados.IdProfissional
+	     tt_Profissional.Nome
+	   with frame frm_tt_ProfissionaisHabilitados title 'Profissionais Habilitados' overlay row 4 5 down centered.
+end.
+
+def temp-table tt_ProfissionalHabilitadoNoDia
+    field IdProfissional as int
+	field Entrada_1 as int
+	field Saida_1 as int
+	field Entrada_2 as int
+	field Saida_2 as int
+	field Entrada_3 as int
+	field Saida_3 as int
+	.
+empty temp-table tt_ProfissionalHabilitadoNoDia.	
+	
+/* dos profissionais habilitados, quem está no dia solicitado? */
+for each tt_ProfissionaisHabilitados,
+   first tt_Escala_Prof
+   where tt_Escala_Prof.IdProf        = tt_ProfissionaisHabilitados.IdProfissional
+     and tt_Escala_Prof.IdDiaDaSemana = vi_DiaSemana,   
+   first tt_Escala
+   where tt_Escala.IdEscala = tt_escala_Prof.IdEscala:   
+	 
+	 create tt_ProfissionalHabilitadoNoDia.
+	 assign 
+	    tt_ProfissionalHabilitadoNoDia.IdProfissional = tt_ProfissionaisHabilitados.IdProfissional
+		tt_ProfissionalHabilitadoNoDia.Entrada_1  = tt_Escala.Entrada_1
+		tt_ProfissionalHabilitadoNoDia.Saida_1    = tt_Escala.Saida_1
+		tt_ProfissionalHabilitadoNoDia.Entrada_2  = tt_Escala.Entrada_2
+		tt_ProfissionalHabilitadoNoDia.Saida_2    = tt_Escala.Saida_2
+		tt_ProfissionalHabilitadoNoDia.Entrada_3  = tt_Escala.Entrada_3
+		tt_ProfissionalHabilitadoNoDia.Saida_3    = tt_Escala.Saida_3
+		
+		.
+end.
+
+/* mostra os profissionais habilitados que estão no dia solicitado */
+for each tt_ProfissionalHabilitadoNoDia,
+   first tt_Profissional
+   where tt_Profissional.IdProf = tt_ProfissionalHabilitadoNoDia.IdProfissional.
+    disp tt_ProfissionalHabilitadoNoDia.IdProfissional
+	     tt_Profissional.Nome		 
+		 tt_ProfissionalHabilitadoNoDia.Entrada_1
+		 tt_ProfissionalHabilitadoNoDia.Saida_1  
+		 tt_ProfissionalHabilitadoNoDia.Entrada_2
+	     tt_ProfissionalHabilitadoNoDia.Saida_2   
+         tt_ProfissionalHabilitadoNoDia.Entrada_3
+         tt_ProfissionalHabilitadoNoDia.Saida_3  
+		 with frame frm_tt_ProfissionalHabilitadoNoDia title 'Profissionais Habilitados no Dia' 
+		   overlay row 6 1 down 1 col centered side-labels.
+		 
+		 .
+end.  
+
+/* Dos profissionais habilitados no dia, quais horarios estão vagos? */
+for each tt_ProfissionalHabilitadoNoDia.
+    
+	assign        
+	   vi_HoraInicialTurno = tt_Escala.Entrada_1
+	   vi_HoraFinalTurno   = tt_Escala.Saida_1
+	   vl_HorarioDisponivelEmAberto = no	   
+	   .	   
+	
+	/* Entrada 1 */
+	do vi_X = tt_ProfissionalHabilitadoNoDia.Entrada_1 to tt_ProfissionalHabilitadoNoDia.Saida_1.   
+	   
+	   find first ssi013
+	      where ssi013.Data           = vt_Data			
+			and ssi013.IdProfissional = tt_ProfissionalHabilitadoNoDia.IdProfissional
+			and ssi013.HoraIni        = vi_X			
+		  no-error.
+	   
+	   if not avail ssi013 and vl_HorarioDisponivelEmAberto = no then do.		
+		   create tt_HorarioDisponivel.
+		   assign 
+		       tt_HorarioDisponivel.HoraInicio     = vi_X
+			   tt_HorarioDisponivel.IdProfissional = tt_ProfissionalHabilitadoNoDia.IdProfissional
+			   .
+		   assign 		      
+			  vl_HorarioDisponivelEmAberto = yes
+			  .			  
+		end.
+		if avail ssi013 /*and tt_Sessao.ExigeExclusividadeProfissional = yes */then do.	   
+		   assign 
+		      tt_HorarioDisponivel.HoraFim = vi_X - 1
+			  .	   
+		   assign 
+			  vi_X = ssi013.HoraFim.
+		   
+		   assign 
+		      vl_HorarioDisponivelEmAberto = no
+			  vi_HorarioReservadoAte = ssi013.HoraFim
+		      .
+		end.   
+	   /* coloca hora final igual ao final do turno se não encontrar */
+	   if vi_X = vi_HoraFinalTurno and tt_HorarioDisponivel.HoraFim = 0 then do.
+	      assign 
+		     tt_HorarioDisponivel.HoraFim  = vi_X
+			 vl_HorarioDisponivelEmAberto = no.
+	   end.
+	   
+	   /* Fazer a Entrada 2 e 3 tambem */
+	   
+	end.	
+end.
+
+/* Mostra os Horarios Disponiveis do Profissional (Que não tem nada agendado) */
+for each tt_HorarioDisponivel,
+    first tt_Profissional
+    where tt_Profissional.IdProf = tt_HorarioDisponivel.IdProfissional.
+	
+	disp 
+	   tt_Profissional.Nome
+	   retornaHora(tt_HorarioDisponivel.HoraInicio * 60)
+	   retornaHora(tt_HorarioDisponivel.HoraFim  * 60)
+	   with frame frm_tt_HorarioDisponivel title 'Horarios sem Agendamento dos Profissionais Habilitados no Dia' 
+		   overlay row 3 5 down 1 col centered.
+end.    
+
+/* Quantos recursos sao necessarios para a sessao? */
+for each tt_RecursoPorSessao
+   where tt_RecursoPorSessao.IdSessao = vi_Idsessao,
+   first tt_TipoRecurso
+   where tt_TipoRecurso.IdTipoRecurso = tt_RecursoPorSessao.IdTipoRecurso:
+   
+   disp 
+      tt_RecursoPorSessao.IdSessao
+	  tt_TipoRecurso.Descricao
+	  with frame frm_tt_RecursoPorSessao title 'Recursos necessarios para executar a sessao'
+	     overlay row 5 3 down 1 col centered.   
+end.   
+
+def temp-table tt_RecursoDisponivelPorMinuto
+    field IdRecurso as int	
+	field IdTipoRecurso as int
+	field HoraDisponivel as int
+	.
+
+	
+/* Nos Horarios Disponiveis do Profissional, que equipamentos tenho disponivel em toda clinica? */
+/*
+for each tt_HorarioDisponivel:        
+
+   do vi_X = tt_HorarioDisponivel.HoraInicio to tt_HorarioDisponivel.HoraFim.	 
+*/   
+
+assign 
+   vi_PrimeiraHoraClinica  = 1439 /* 23:59 */
+   vi_UltimaHoraClinica    = 0
+   .
+
+for each tt_HorarioDisponivel:
+   if tt_HorarioDisponivel.HoraInicio < vi_PrimeiraHoraClinica  then 
+      assign 
+	     vi_PrimeiraHoraClinica = tt_HorarioDisponivel.HoraInicio
+	     .
+   	if tt_HorarioDisponivel.HoraFim > vi_UltimaHoraClinica then 
+      assign 
+	     vi_UltimaHoraClinica = tt_HorarioDisponivel.HoraFim
+	     .	 
+end.
+
+
+   do vi_X = vi_PrimeiraHoraClinica to vi_UltimaHoraClinica.	   
+      for each tt_Recurso.	     
+	     create tt_RecursoDisponivelPorMinuto.
+		 assign 
+		    tt_RecursoDisponivelPorMinuto.IdRecurso      = tt_Recurso.IdRecurso
+			tt_RecursoDisponivelPorMinuto.HoraDisponivel = vi_X
+			tt_RecursoDisponivelPorMinuto.IdTipoRecurso  = tt_Recurso.IdTipoRecurso			
+			.		    		 
+	  end.
+	  for each ssi013
+         where ssi013.Data            = vt_Data			
+	       and ssi013.HoraIni        <= vi_X
+		   and ssi013.HoraFim		 >= vi_X:		 	 
+		   
+		 for each ssi014
+			where ssi014.IdAgenda = ssi013.IdAgenda:			
+			for each tt_RecursoDisponivelPorMinuto
+			   where tt_RecursoDisponivelPorMinuto.IdRecurso      = ssi014.IdRecurso			   
+			     and tt_RecursoDisponivelPorMinuto.HoraDisponivel >= ssi013.HoraIni
+				 and tt_RecursoDisponivelPorMinuto.HoraDisponivel <= ssi013.HoraFim:			   			
+			   delete tt_RecursoDisponivelPorMinuto.
+		    end.
+		 end.
+	  end.			
+   end.     
+
+
+
+/* Mostra os Equipamentos Disponiveis pro Profissional por Hora na Clinica 
+for each tt_RecursoDisponivelPorMinuto, 
+    first tt_Recurso
+	where tt_Recurso.IdRecurso = tt_RecursoDisponivelPorMinuto.IdRecurso:
+   disp tt_RecursoDisponivelPorMinuto.IdRecurso
+        tt_Recurso.Descricao
+		retornaHora(tt_RecursoDisponivelPorMinuto.HoraDisponivel * 60)
+      with frame hjgfjkgh overlay row 4 centered 10 down title 'Recursos disponiveis na hora'.
+end.
+*/
+
+def temp-table tt_HorarioDisponivelFinal
+    field HoraInicio as int
+	field IdProfissional as int
+	field HoraFim as int
+	field Encaixa as log
+	field QtdeRecursosDisponiveis as int.
+
+assign 
+   vl_HorarioDisponivelEmAberto = no.
+	
+/* Verifica se todos os equipamentos pra cumprir a sessao estao disponiveis por minuto 
+for each tt_HorarioDisponivel:        
+   
+   do vi_X = tt_HorarioDisponivel.HoraInicio to tt_HorarioDisponivel.HoraFim.	         
+	  for each tt_RecursoPorSessao:
+	     find first tt_RecursoDisponivelPorMinuto
+		    where tt_RecursoDisponivelPorMinuto.IdTipoRecurso  = tt_RecursoPorSessao.IdTipoRecurso
+			  and tt_RecursoDisponivelPorMinuto.HoraDisponivel = vi_X
+			no-error.
+		 if not avail tt_RecursoPorSessao then 
+            delete tt_HorarioDisponivel.			
+	  end.
+   end.
+end.
+*/
+
+/* Mostra os Horarios Disponiveis do Profissional por equipamento 
+for each tt_HorarioDisponivel,
+    first tt_Profissional
+    where tt_Profissional.IdProf = tt_HorarioDisponivel.IdProfissional.
+	
+	disp 
+	   tt_Profissional.Nome
+	   retornaHora(tt_HorarioDisponivel.HoraInicio * 60)
+	   retornaHora(tt_HorarioDisponivel.HoraFim  * 60)
+	   with frame frm_tt_HorarioDisponivelReal title 'Horarios Disponiveis (Tem Profissional e Equipamento)' 
+		   overlay row 3 5 down 1 col centered.
+end.    */
+   
+assign 
+   vl_HorarioDisponivelEmAberto = no.
+   
+for each tt_HorarioDisponivel:     
+   if tt_HorarioDisponivel.HoraFim - tt_HorarioDisponivel.HoraInicio < vi_TempoTotalSessao then  
+      next. 
+   
+   bl_Minuto:
+   do vi_X = tt_HorarioDisponivel.HoraInicio to tt_HorarioDisponivel.HoraFim.		 
+	  if vl_HorarioDisponivelEmAberto = no then do.
+	     create tt_HorarioDisponivelFinal.
+         assign 
+            tt_HorarioDisponivelFinal.HoraInicio     = vi_X
+	        tt_HorarioDisponivelFinal.IdProfissional = tt_HorarioDisponivel.IdProfissional
+	        .	  
+		 assign 
+             vl_HorarioDisponivelEmAberto = yes
+			 .		 
+	  end.		
+	  for each tt_RecursoPorSessao:
+	     find first tt_RecursoDisponivelPorMinuto
+		    where tt_RecursoDisponivelPorMinuto.IdTipoRecurso  = tt_RecursoPorSessao.IdTipoRecurso
+			  and tt_RecursoDisponivelPorMinuto.HoraDisponivel = vi_X
+			no-error.
+		 if not avail tt_RecursoPorSessao then do.
+			assign 
+			   tt_HorarioDisponivelFinal.HoraFim = vi_X
+			   vl_HorarioDisponivelEmAberto = no
+			   .
+            if tt_HorarioDisponivelFinal.HoraFim - tt_HorarioDisponivelFinal.HoraInicio < vi_TempoTotalSessao then 
+               delete tt_HorarioDisponivelFinal.			
+			   
+			next bl_Minuto.
+		 end.		 
+	  end.
+	  
+	  if vi_x = tt_HorarioDisponivel.HoraFim then 
+	     assign 
+		    tt_HorarioDisponivelFinal = vi_X
+			.	    
+	  
+   end.
+end.  
+
+/*
+if avail tt_RecursoDisponivelPorMinuto and vl_HorarioDisponivelEmAberto = no then do.
+		    create tt_HorarioDisponivelFinal.
+			assign 
+			   tt_HorarioDisponivelFinal.HoraInicio = vi_X
+			   tt_HorarioDisponivelFinal.IdProfissional = tt_HorarioDisponivel.IdProfissional
+			   .			   
+			assign 		      
+			  vl_HorarioDisponivelEmAberto = yes
+			  .			     
+		 end.	
+         if not avail tt_RecursoDisponivelPorMinuto then do.	   
+		   assign 
+		      tt_HorarioDisponivelFinal.HoraFim = vi_X - 1
+			  .	   
+		   	   
+		   assign 
+		      vl_HorarioDisponivelEmAberto = no			  
+		      .
+		 end.   		 
+*/
+/* Mostra os Horarios Disponiveis do Profissional por equipamento */
+for each tt_HorarioDisponivelFinal,
+    first tt_Profissional
+    where tt_Profissional.IdProf = tt_HorarioDisponivelFinal.IdProfissional.
+	
+	disp 
+	   tt_Profissional.Nome
+	   retornaHora(tt_HorarioDisponivelFinal.HoraInicio * 60)
+	   retornaHora(tt_HorarioDisponivelFinal.HoraFim  * 60)
+	   with frame frm_tt_HorarioDisponivelReal title 'Horarios Disponiveis (Tem Profissional e Equipamento)' 
+		   overlay row 3 5 down 1 col centered.
+end.    
+
+
+
+/* Que recurso está disponivel nos horarios disponiveis do profissional?  */
+for each tt_RecursoPorSessao:
+   for each tt_HorarioDisponivel:       
+	   do vi_X = tt_HorarioDisponivel.HoraInicio to tt_HorarioDisponivel.HoraFim.	   
+   	      /*
+		  find first tt_RecursoDisponivelPorMinuto
+		     where tt_RecursoDisponivelPorMinuto.Id
+			 */
+	   end.
+   end.
+end.   
+
+pause 9999999.  
+   
+for each tt_ProfSessao
+   where tt_ProfSessao.IdSessao = vi_IdSessao,
+   first tt_Profissional
+   where tt_Profissional.IdProf = tT_ProfSessao.IdProfissional
+     and (tt_Profissional.IdProfissional = vi_Profissional or vi_profissional = 0),
+   first tt_Sessao
+   where tt_Sessao.IdSessao = tt_ProfSessao.IdSessao,
+    each tt_Escala_Prof
+   where tt_Escala_Prof.IdProf  = tt_ProfSessao.IdProfissional
+     and (tt_Escala_Prof.IdDiaDaSemana = vi_DiaSemana
+      or  vi_DiaSemana = 0),
+   first tt_Escala
+   where tt_Escala.IdEscala = tt_escala_Prof.IdEscal   
+   .
+   disp 
+      tt_Profissional.nomePro
+      retornaHora(tt_Escala.Entrada_1 * 60) {&cl} 'Ent-Manha'
+      retornaHora(tt_Escala.Saida_1 * 60)   {&cl} 'Sai-Manha'
+      retornaHora(tt_Escala.Entrada_2 * 60) {&cl} 'Ent-Tard'
+      retornaHora(tt_Escala.Saida_2 * 60)   {&cl} 'Sai-Tard'
+      retornaHora(tt_Escala.Entrada_3 * 60) {&cl} 'Ent-Noit'
+      retornaHora(tt_Escala.Saida_3 * 60)   {&cl} 'Sai-Noit'
+	  with frame frm_HorariosProfissionaisSessao overlay row 6.
+      .
+	
+	assign 
+       vi_Disponivel       = 0
+	   vi_HoraInicialTurno = tt_Escala.Entrada_1
+	   vi_HoraFinalTurno   = tt_Escala.Saida_1
+	   vl_HorarioDisponivelEmAberto = no
+	   vi_HorarioReservadoAte = tt_Escala.Saida_1
+	   .	   
+	   
+	/* MANHA */
+	
+	do vi_X = tt_Escala.Entrada_1 to tt_Escala.Saida_1.   
+	   
+	   find first ssi013
+	      where ssi013.Data = vt_Data		    
+			/*
+			and ssi013.IdSessao = vi_IDSessao		
+			*/			
+			and ssi013.IdProfissional = tT_ProfSessao.IdProfissional
+			and ssi013.HoraIni = vi_X			
+		  no-error.
+	   if not avail ssi013 and vl_HorarioDisponivelEmAberto = no then do.		
+		   create tt_HorarioDisponivel.
+		   assign 
+		       tt_HorarioDisponivel.HoraInicio = vi_X
+			   tt_HorarioDisponivel.IdProfissional = tT_ProfSessao.IdProfissional
+			   .
+		   assign 
+		      vi_Disponivel = vi_Disponivel + 1
+			  vl_HorarioDisponivelEmAberto = yes
+			  .			  
+		end.
+		if avail ssi013 /*and tt_Sessao.ExigeExclusividadeProfissional = yes */then do.	   
+		   assign 
+		      tt_HorarioDisponivel.HoraFim = vi_X - 1
+			  .	   
+		   assign 
+			  vi_X = ssi013.HoraFim.
+		   
+		   assign 
+		      vi_Disponivel = 0
+			  vl_HorarioDisponivelEmAberto = no
+			  vi_HorarioReservadoAte = ssi013.HoraFim
+		      .
+		end.   
+        
+	   /*disp retornaHora(vi_Disponivel * 60) {&cl} 'Disponivel'. */
+	   disp retornaHora(vi_X * 60) {&cl} 'Hora Pesquisa'. 
+	   /*pause 100.	*/
+	   
+	   /* coloca hora final igual ao final do turno se não encontrar */
+	   if vi_X = vi_HoraFinalTurno and tt_HorarioDisponivel.HoraFim = 0 then do.
+	      assign 
+		     tt_HorarioDisponivel.HoraFim  = vi_X
+			 vl_HorarioDisponivelEmAberto = no.
+	   end.
+	end.	
+	
+	/* TARDE */
+	
+	assign 
+       vi_Disponivel = 0
+	   vi_HoraInicialTurno = tt_Escala.Entrada_2
+	   vi_HoraFinalTurno   = tt_Escala.Saida_2
+	   vl_HorarioDisponivelEmAberto = no
+	   vi_HorarioReservadoAte = tt_Escala.Saida_2
+	   .	   	
+	
+	bl_tarde:
+	do vi_X = tt_Escala.Entrada_2 to tt_Escala.Saida_2.
+	  
+	   /* Verifica se o profissional tem horario disponivel */
+	   
+	   find first ssi013
+	      where ssi013.Data = vt_Data
+		    /*
+			and ssi013.IdSessao = vi_IDSessao	
+			*/			
+			and ssi013.IdProfissional = tT_ProfSessao.IdProfissional
+			and ssi013.HoraIni = vi_X
+		  no-error.
+	   if not avail ssi013 and vl_HorarioDisponivelEmAberto = no then do.		
+		   
+		   /* Quantos recursos preciso pra essa sessao? */
+		   for each tt_RecursoPorSessao
+		      where tt_RecursoPorSessao.IdSessao = vi_IdSessao:			  
+			  
+			  /* Quais Recursos desse tipo eu tenho? */
+			  for each tt_Recurso
+			     where tt_Recurso.IdTipoRecurso = tt_RecursoPorSessao.IdTipoRecurso:
+				 
+				 /* Nessa hora, esse equipamento está locado? */
+				 
+				 if can-find(first bf_ssi013
+							 where bf_ssi013.Data = vt_data
+							   and bf_ssi013.idSessao = vi_IdSessao
+							   and bf_ssi013.HoraIni  = vi_X
+							   and can-find(first ssi014
+											where ssi014.IdAgenda = bf_ssi013.IdAgenda
+											  and ssi014.IdRecurso = tt_Recurso.IdRecurso)) then 
+											  
+					pause 7777.
+					next bl_Tarde.								 
+			  end.	 			  
+		   end.	  
+		   pause 6666.	  
+		   
+		   /* Tenta ver se nesse horario tem ja uma sessao em andamento pra tentar buscar se tem equipamento disponivel */
+		   /*
+		   find first ssi013
+		      where ssi013.Data     = vt_Data
+			    and ssi013.IdSessao = vi_IdSessao
+				and ssi013.HoraIni  = vi_X
+			  no-error.
+		   if avail ssi013 then do.
+			  for each tt_RecursoPorSessao
+			     where tt_RecursoPorSessao.IdSessao = ssi013.IdSessao:
+			end.
+			*/	
+		   
+		   create tt_HorarioDisponivel.
+		   assign 
+		       tt_HorarioDisponivel.HoraInicio = vi_X
+			   tt_HorarioDisponivel.IdProfissional = tT_ProfSessao.IdProfissional
+			   .
+		   assign 
+		      vi_Disponivel = vi_Disponivel + 1
+			  vl_HorarioDisponivelEmAberto = yes
+			  .			  
+		end.
+		if avail ssi013 then do.	   
+		   assign 
+		      tt_HorarioDisponivel.HoraFim = vi_X - 1
+			  .	   
+		   assign 
+			  vi_X = ssi013.HoraFim.
+		   
+		   assign 
+		      vi_Disponivel = 0
+			  vl_HorarioDisponivelEmAberto = no
+			  vi_HorarioReservadoAte = ssi013.HoraFim
+		      .
+		end.   
+        	   
+	    disp retornaHora(vi_X * 60) {&cl} 'Hora Pesquisa'. 
+	   
+	   
+	   /* coloca hora final igual ao final do turno se não encontrar */
+	   if vi_X = vi_HoraFinalTurno and tt_HorarioDisponivel.HoraFim = 0 then do.
+	      assign 
+		     tt_HorarioDisponivel.HoraFim  = vi_X
+			 vl_HorarioDisponivelEmAberto = no.
+	   end.   
+	end.
+		
+	/* NOITE */
+	
+	assign 
+       vi_Disponivel = 0
+	   vi_HoraInicialTurno = tt_Escala.Entrada_3
+	   vi_HoraFinalTurno   = tt_Escala.Saida_3
+	   vl_HorarioDisponivelEmAberto = no
+	   vi_HorarioReservadoAte = tt_Escala.Saida_3
+	   .	 
+	
+	do vi_X = tt_Escala.Entrada_3 to tt_Escala.Saida_3.
+	   find first ssi013
+	      where ssi013.Data = vt_Data
+		    /*
+			and ssi013.IdSessao = vi_IDSessao
+			*/
+			and ssi013.IdProfissional = tT_ProfSessao.IdProfissional
+			and ssi013.HoraIni = vi_X
+		  no-error.
+	   if not avail ssi013 and vl_HorarioDisponivelEmAberto = no then do.		
+		   create tt_HorarioDisponivel.
+		   assign 
+		       tt_HorarioDisponivel.HoraInicio = vi_X
+			   tt_HorarioDisponivel.IdProfissional = tT_ProfSessao.IdProfissional
+			   .
+		   assign 
+		      vi_Disponivel = vi_Disponivel + 1
+			  vl_HorarioDisponivelEmAberto = yes
+			  .			  
+		end.
+		if avail ssi013 then do.	   
+		   assign 
+		      tt_HorarioDisponivel.HoraFim = vi_X - 1
+			  .	   
+		   assign 
+			  vi_X = ssi013.HoraFim.
+		   
+		   assign 
+		      vi_Disponivel = 0
+			  vl_HorarioDisponivelEmAberto = no
+			  vi_HorarioReservadoAte = ssi013.HoraFim
+		      .
+		end.          
+	  
+	   disp retornaHora(vi_X * 60) {&cl} 'Hora Pesquisa'. 
+	    
+	   if vi_X = vi_HoraFinalTurno and tt_HorarioDisponivel.HoraFim = 0 then do.
+	      assign 
+		     tt_HorarioDisponivel.HoraFim  = vi_X
+			 vl_HorarioDisponivelEmAberto = no.
+	   end.	   
+	end.	
+	
+	/*
+	find first ssi013
+       where ssi013.IdSessao = vi_IdSessao
+	     and ssi013.Data     = vt_Data
+		 and ssi013.idProfissional = vi_Profissional
+	*/   
+   
+end.   
+
+for each tt_HorarioDisponivel.
+   
+   if (tt_HorarioDisponivel.HoraFim - tt_HorarioDisponivel.Horainicio) >= vi_TempoTotalSessao then 
+      assign 
+	     tt_HorarioDisponivel.Encaixa = yes.
+	else
+        tt_HorarioDisponivel.Encaixa = no
+		.
+		 
+    disp 
+	     tt_HorarioDisponivel.IdProfissional 
+		 retornaHora(tt_HorarioDisponivel.Horainicio * 60)
+	     retornaHora(tt_HorarioDisponivel.HoraFim * 60)
+		 tt_HorarioDisponivel.QtdeRecursosDisponiveis
+		 tt_HorarioDisponivel.Encaixa.
+         .   
+end.
+
+for each ssi013,
+   first tt_Sessao
+   where tT_Sessao.IdSessao = ssi013.IdSessao,
+   first tt_Profissional
+   where tt_Profissional.IdProfissional = ssi013.IdProfissional:
+   
+   disp 
+      ssi013.Data
+	  tt_Profissional.Nome
+	  tt_Sessao.NomeSessao
+	  retornaHora(ssi013.horaInicio * 60)
+	  retornaHora(ssi013.horaFim * 60).
+end.	  
+
+
+message 'Agendar algum horario?' update vl_Ok as log.
+if not vl_Ok then 
+   undo, next.
+
+find last ssi013 no-error.
+if avail ssi013 then 
+   assign 
+      vi_IdAgenda = ssi013.IdAgenda + 1.
+else
+   assign 
+      vi_IdAgenda = 1
+	  .
+   
+create ssi013.
+assign 
+   ssi013.IdAgenda = vi_IdAgenda.
+
+update    
+   ssi013.Data
+   ssi013.Cliente
+   ssi013.IdSessao
+   ssi013.IdProfissional
+   ssi013.HoraInicio
+   ssi013.horaFim = ssi013.HoraInicio + vi_TempoTotalSessao
+   with frame ffff row 15 side-labels overlay.
+   
+
+for each tt_RecursoPorSessao
+   where tt_RecursoPorSessao.IdSessao = ssi013.IdSessao,
+   each  tt_Recurso
+   where tt_Recurso.IdTipoRecurso = tt_RecursoPorSessao.IdTipoRecurso:
+   
+   disp 
+      tt_Recurso.IdRecurso
+	  tt_Recurso.Descricao
+      with frame frm_RecursosDisponiveis overlay row 7 centered 5 down.   
+	  
+end.
+pause 456789.	  
+
+create ssi014.
+assign 
+   ssi014.IdAgenda = vi_IdAgenda.
+update ssi014.IdRecurso with frame frm_Recurso overlay side-labels.
+   
+/* Respostas que eu preciso:
+   1) Que horarios tenho para determinada sessao
+   2) Que horarios tenho para determinado profissional
+   3) 
+   */
+   
+   
+   
+   
+   
+   
+
+   
+  
+  
+  
+
+
+
+
